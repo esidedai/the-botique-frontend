@@ -218,7 +218,7 @@ const streamConversation = async (threadId: string | null, input: string) => {
           {!hasSearched ? (
             <div className="text-center mb-12">
               <h1 className="text-5xl font-bold text-black mb-5 bg-custom-gradient">
-                Search smarter & faster
+                Greg Alexander - The Boutique in Action
               </h1>
               <div className="flex justify-center items-center">
                 <input
