@@ -35,7 +35,7 @@ const Home: React.FC = () => {
     if (!threadId) {
       try {
         const response = await axios.post(
-          "http://localhost:3000/api/new-thread",
+          "https://ti.aitaskmasters.net/thebotique/api/new-thread",
           {},
           {
             headers: {
@@ -69,7 +69,7 @@ const streamConversation = async (threadId: string | null, input: string) => {
   setSearchTerm("");
 
   try {
-    const response = await fetch("http://localhost:3000/api/stream-response", {
+    const response = await fetch("https://ti.aitaskmasters.net/thebotique/api/stream-response", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -163,7 +163,7 @@ const streamConversation = async (threadId: string | null, input: string) => {
     setSearchTerm("");
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/response",
+        "https://ti.aitaskmasters.net/thebotique/api/response",
         { threadId, input },
         {
           headers: {
