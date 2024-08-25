@@ -104,11 +104,14 @@ const streamConversation = async (threadId: string | null, input: string) => {
               const parsedContent = JSON.parse(jsonString);
               completeMessage += parsedContent.content;
 
-              setTypedResponse(completeMessage);
+              // Replace any "undefined" with an empty string
+              const sanitizedMessage = completeMessage.replace(/undefined/g, "");
+
+              setTypedResponse(sanitizedMessage);
               setConversations((prevConversations) => {
                 return prevConversations.map((conversation) =>
                   conversation.prompt === input
-                    ? { ...conversation, response: completeMessage, isLoading: true }
+                    ? { ...conversation, response: sanitizedMessage, isLoading: true }
                     : conversation
                 );
               });
@@ -123,7 +126,7 @@ const streamConversation = async (threadId: string | null, input: string) => {
     setConversations((prevConversations) => {
       return prevConversations.map((conversation) =>
         conversation.prompt === input
-          ? { ...conversation, response: completeMessage, isLoading: false }
+          ? { ...conversation, response: completeMessage.replace(/undefined/g, ""), isLoading: false }
           : conversation
       );
     });
@@ -134,6 +137,7 @@ const streamConversation = async (threadId: string | null, input: string) => {
     setLoading(false);
   }
 };
+
 
   
   useEffect(() => {
