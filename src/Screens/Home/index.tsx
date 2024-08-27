@@ -4,6 +4,8 @@ import axios from "axios";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { IoHome } from "react-icons/io5";
+import logo from "../../assets/logo.png";
+import { useNavigate } from "react-router-dom";
 
 interface Conversation {
   prompt: string;
@@ -59,87 +61,98 @@ const Home: React.FC = () => {
     setHasSearched(true);
   };
 
-const streamConversation = async (threadId: string | null, input: string) => {
-  setConversations((prevConversations) => [
-    ...prevConversations,
-    { prompt: input, response: "", isLoading: true },
-  ]);
+  const streamConversation = async (threadId: string | null, input: string) => {
+    setConversations((prevConversations) => [
+      ...prevConversations,
+      { prompt: input, response: "", isLoading: true },
+    ]);
 
-  setTypedResponse("");
-  setSearchTerm("");
+    setTypedResponse("");
+    setSearchTerm("");
 
-  try {
-    const response = await fetch("https://ti.aitaskmasters.net/thebotique/api/stream-response", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ input }),
-    });
+    try {
+      const response = await fetch(
+        "https://ti.aitaskmasters.net/thebotique/api/stream-response",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ input }),
+        }
+      );
 
-    if (!response.body) {
-      throw new Error("ReadableStream not supported or no body in response");
-    }
+      if (!response.body) {
+        throw new Error("ReadableStream not supported or no body in response");
+      }
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder("utf-8");
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
 
-    let streamedResponse = "";
-    let completeMessage = "";
-    
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+      let streamedResponse = "";
+      let completeMessage = "";
 
-      streamedResponse += decoder.decode(value, { stream: true });
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      const lines = streamedResponse.split('\n');
-      streamedResponse = "";
+        streamedResponse += decoder.decode(value, { stream: true });
 
-      lines.forEach((line) => {
-        if (line.startsWith("data:")) {
-          const jsonString = line.replace("data: ", "").trim();
-          if (jsonString !== "") {
-            try {
-              const parsedContent = JSON.parse(jsonString);
-              completeMessage += parsedContent.content;
+        const lines = streamedResponse.split("\n");
+        streamedResponse = "";
 
-              // Replace any "undefined" with an empty string
-              const sanitizedMessage = completeMessage.replace(/undefined/g, "");
+        lines.forEach((line) => {
+          if (line.startsWith("data:")) {
+            const jsonString = line.replace("data: ", "").trim();
+            if (jsonString !== "") {
+              try {
+                const parsedContent = JSON.parse(jsonString);
+                completeMessage += parsedContent.content;
 
-              setTypedResponse(sanitizedMessage);
-              setConversations((prevConversations) => {
-                return prevConversations.map((conversation) =>
-                  conversation.prompt === input
-                    ? { ...conversation, response: sanitizedMessage, isLoading: true }
-                    : conversation
+                // Replace any "undefined" with an empty string
+                const sanitizedMessage = completeMessage.replace(
+                  /undefined/g,
+                  ""
                 );
-              });
-            } catch (error) {
-              console.error("Failed to parse JSON:", error);
+
+                setTypedResponse(sanitizedMessage);
+                setConversations((prevConversations) => {
+                  return prevConversations.map((conversation) =>
+                    conversation.prompt === input
+                      ? {
+                          ...conversation,
+                          response: sanitizedMessage,
+                          isLoading: true,
+                        }
+                      : conversation
+                  );
+                });
+              } catch (error) {
+                console.error("Failed to parse JSON:", error);
+              }
             }
           }
-        }
+        });
+      }
+      console.log("Complete Message: ", completeMessage);
+      setConversations((prevConversations) => {
+        return prevConversations.map((conversation) =>
+          conversation.prompt === input
+            ? {
+                ...conversation,
+                response: completeMessage.replace(/undefined/g, ""),
+                isLoading: false,
+              }
+            : conversation
+        );
       });
+    } catch (error) {
+      console.error("Error during streaming conversation:", error);
+    } finally {
+      setLoading(false);
     }
-    console.log("Complete Message: ", completeMessage);
-    setConversations((prevConversations) => {
-      return prevConversations.map((conversation) =>
-        conversation.prompt === input
-          ? { ...conversation, response: completeMessage.replace(/undefined/g, ""), isLoading: false }
-          : conversation
-      );
-    });
+  };
 
-  } catch (error) {
-    console.error("Error during streaming conversation:", error);
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-  
   useEffect(() => {
     if (currentResponse) {
       let index = 0;
@@ -216,88 +229,112 @@ const streamConversation = async (threadId: string | null, input: string) => {
     window.location.reload();
     setHasSearched(false);
   };
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-white px-4">
-        <div className="w-full max-w-2xl">
-          {!hasSearched ? (
-            <div className="text-center mb-12">
-              <h1 className="text-5xl font-bold text-black mb-5 bg-custom-gradient">
-                Greg Alexander - The Boutique in Action
-              </h1>
-              <div className="flex justify-center items-center">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  placeholder="Ask anything"
-                  onChange={handleInputChange}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="w-full py-3 pl-4 pr-20 text-lg text-gray-700 bg-white border-none rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-700 shadow-[2px_2px_38px_0px_rgba(0,0,0,0.25),0px_-2px_4px_0px_rgba(0,0,0,0.25)_inset,1px_2px_4px_0px_rgba(0,0,0,0.25)_inset]"
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-white px-4">
+      <div className="w-full max-w-2xl">
+        {!hasSearched ? (
+          <div className="text-center mb-12">
+            <h1 className="text-5xl font-bold text-black mb-5 bg-custom-gradient">
+              Greg Alexander - The Boutique in Action
+            </h1>
+            <div className="flex justify-center items-center">
+              <input
+                type="text"
+                value={searchTerm}
+                placeholder="Ask anything"
+                onChange={handleInputChange}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="w-full py-3 pl-4 pr-20 text-lg text-gray-700 bg-white border-none rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-700 shadow-[2px_2px_38px_0px_rgba(0,0,0,0.25),0px_-2px_4px_0px_rgba(0,0,0,0.25)_inset,1px_2px_4px_0px_rgba(0,0,0,0.25)_inset]"
+              />
+              <button
+                onClick={handleSearch}
+                className="flex justify-center items-center w-15 h-15 ml-[-47px] bg-[#333333] text-white text-lg font-bold p-3 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                <FaArrowRight />
+              </button>
+            </div>
+            <div className="mt-6 flex flex-row gap-2 items-center justify-center">
+              <img
+                src={logo}
+                alt="logo"
+                width="60"
+                height="auto"
+                className="cursor-pointer"
+                onClick={() => window.open("https://c1m.ai/conversational-ai/", "_blank")}
+              />
+              <span className="text-gray-700 text-lg font-bold">
+                Powered by C1M.
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="relative text-center mb-12">
+            <div className="sticky top-0 z-10 bg-white shadow text-center flex justify-center">
+              <div className="p-4 text-3xl font-bold text-center">
+                <IoHome
+                  className="text-3xl text-center cursor-pointer"
+                  onClick={handleHomeClick}
                 />
-                <button
-                  onClick={handleSearch}
-                  className="flex justify-center items-center w-15 h-15 ml-[-47px] bg-[#333333] text-white text-lg font-bold p-3 rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  <FaArrowRight />
-                </button>
               </div>
             </div>
-          ) : (
-            <div className="relative text-center mb-12">
-              <div className="sticky top-0 z-10 bg-white shadow text-center flex justify-center">
-                <div className="p-4 text-3xl font-bold text-center">
-                  <IoHome
-                    className="text-3xl text-center cursor-pointer"
-                    onClick={handleHomeClick}
-                  />
+            {conversations.map((conversation, index) => (
+              <div
+                key={index}
+                className="flex justify-center items-center flex-col gap-5 mt-4 mb-0"
+              >
+                <div className="w-full flex flex-row gap-2">
+                  <div className="font-bold text-lg mb-2 text-left">
+                    QUESTION:
+                  </div>
+                  <p className="text-gray-700 text-base text-left leading-loose">
+                    {conversation.prompt}
+                  </p>
                 </div>
-              </div>
-              {conversations.map((conversation, index) => (
-                <div
-                  key={index}
-                  className="flex justify-center items-center flex-col gap-5 mt-4 mb-0"
-                >
-                  <div className="w-full flex flex-row gap-2">
+                <div className="w-full rounded-lg overflow-y-auto shadow-lg border-2 border-solid border-gray-400 py-2 mt-0 mb-6">
+                  <div className="px-6 py-4">
                     <div className="font-bold text-lg mb-2 text-left">
-                      QUESTION:
+                      ANSWER:
                     </div>
-                    <p className="text-gray-700 text-base text-left leading-loose">
-                      {conversation.prompt}
-                    </p>
-                  </div>
-                  <div className="w-full rounded-lg overflow-y-auto shadow-lg border-2 border-solid border-gray-400 py-2 mt-0 mb-6">
-                    <div className="px-6 py-4">
-                      <div className="font-bold text-lg mb-2 text-left">
-                        ANSWER:
-                      </div>
-                      <div className="text-gray-700 text-base text-left">
-                        <Markdown remarkPlugins={[remarkGfm]}>
-                          {conversation.response || typedResponse}
-                        </Markdown>
-                      </div>
+                    <div className="text-gray-700 text-base text-left">
+                      <Markdown remarkPlugins={[remarkGfm]}>
+                        {conversation.response || typedResponse}
+                      </Markdown>
                     </div>
                   </div>
                 </div>
-              ))}
-              <div className="relative w-full mt-6">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  placeholder="Ask anything"
-                  onChange={handleInputChange}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="w-full py-3 pl-4 pr-20 text-lg text-gray-700 bg-white border-none rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-700 shadow-[2px_2px_38px_0px_rgba(0,0,0,0.25),0px_-2px_4px_0px_rgba(0,0,0,0.25)_inset,1px_2px_4px_0px_rgba(0,0,0,0.25)_inset]"
-                />
-                <button
-                  onClick={handleSearch}
-                  className="absolute top-13 right-0.5 mt-[-47px] mr-1 flex justify-center items-center w-15 h-15 bg-[#333333] text-white text-lg font-bold p-3 rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  <FaArrowRight />
-                </button>
               </div>
+            ))}
+            <div className="relative w-full mt-6">
+              <input
+                type="text"
+                value={searchTerm}
+                placeholder="Ask anything"
+                onChange={handleInputChange}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="w-full py-3 pl-4 pr-20 text-lg text-gray-700 bg-white border-none rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-700 shadow-[2px_2px_38px_0px_rgba(0,0,0,0.25),0px_-2px_4px_0px_rgba(0,0,0,0.25)_inset,1px_2px_4px_0px_rgba(0,0,0,0.25)_inset]"
+              />
+              <button
+                onClick={handleSearch}
+                className="absolute top-13 right-0.5 mt-[-47px] mr-1 flex justify-center items-center w-15 h-15 bg-[#333333] text-white text-lg font-bold p-3 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                <FaArrowRight />
+              </button>
             </div>
-          )}
-        </div>
-      </div>    
+            <div className="mt-6 flex flex-row gap-2 items-center justify-center">
+              <img
+                src={logo}
+                alt="logo"
+                width="60"
+                height="auto"
+                className="cursor-pointer"
+                onClick={() => window.open("https://c1m.ai/conversational-ai/", "_blank")}
+              />
+              <span>Powered by C1M.</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
