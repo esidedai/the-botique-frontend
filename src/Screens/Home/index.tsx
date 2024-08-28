@@ -235,7 +235,7 @@ const Home: React.FC = () => {
         {!hasSearched ? (
           <div className="text-center mb-12">
             <h1 className="text-5xl font-bold text-black mb-5 bg-custom-gradient">
-              Greg Alexander - The Boutique in Action
+              The Boutique in Action by Collective 54
             </h1>
             <div className="flex justify-center items-center">
               <input
