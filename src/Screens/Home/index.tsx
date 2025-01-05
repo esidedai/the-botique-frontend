@@ -37,7 +37,7 @@ const Home: React.FC = () => {
     if (!threadId) {
       try {
         const response = await axios.post(
-          "https://ti.aitaskmasters.net/thebotique/api/new-thread",
+          "https://ti.esided.net/thebotique/api/new-thread",
           {},
           {
             headers: {
@@ -72,7 +72,7 @@ const Home: React.FC = () => {
 
     try {
       const response = await fetch(
-        "https://ti.aitaskmasters.net/thebotique/api/stream-response",
+        "https://ti.esided.net/thebotique/api/stream-response",
         {
           method: "POST",
           headers: {
@@ -180,7 +180,7 @@ const Home: React.FC = () => {
     setSearchTerm("");
     try {
       const response = await axios.post(
-        "https://ti.aitaskmasters.net/thebotique/api/response",
+        "https://ti.esided.net/thebotique/api/response",
         { threadId, input },
         {
           headers: {
